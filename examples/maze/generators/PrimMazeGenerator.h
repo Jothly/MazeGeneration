@@ -34,6 +34,8 @@ class PrimMazeGenerator : public MazeGeneratorBase
 
 	void initRandomGenerator();
 
+	void displayColors(World* world);
+
 	public:
 	std::string GetName() override { return "Prim's"; }
 
