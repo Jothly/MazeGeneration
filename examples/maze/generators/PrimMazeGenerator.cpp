@@ -1,5 +1,6 @@
 #include "PrimMazeGenerator.h"
 #include <unordered_map>
+#include <assert.h>
 
 
 static enum Direction
@@ -12,7 +13,7 @@ static enum Direction
 
 
 
-
+// Checks if point is within bounds of map
 bool isPointInMap(Point2D point, int mapHalfSize)
 {
 	if (point.y > mapHalfSize || point.y < -mapHalfSize || point.x > mapHalfSize || point.x < -mapHalfSize)
@@ -24,50 +25,42 @@ bool isPointInMap(Point2D point, int mapHalfSize)
 }
 
 
-// Assumes nodePoint is valid
 void addNeighborsToFrontier(std::unordered_set<Point2D, PrimMazeGenerator::Point2DHashFunction>& frontier, 
 	const std::unordered_set<Point2D, PrimMazeGenerator::Point2DHashFunction>& processedNodes, 
 	Point2D nodePoint, int mazeHalfSize)
 {
-	auto tryAddToFrontier = [&](Point2D p)
+	auto tryAddToFrontier = [&](Point2D p) // Adds p to frontier if it hasn't already been processed
 	{
 		if (processedNodes.find(p) == processedNodes.end())
 		{
 			frontier.insert(p);
-			//std::cout << nodePoint.x << " , " << nodePoint.y << " -> " << p.x << " , " << p.y << std::endl;
-		}
-		else
-		{
-			std::cout << p.x << "," << p.y << " already found" << std::endl;
 		}
 	};
 
+	assert(isPointInMap(nodePoint, mazeHalfSize));
 
-	if (nodePoint.y - 1 >= -mazeHalfSize) // Check not out of bounds
+	// Check if new point would be out of bounds, and if not try and add it to frontier
+	if (nodePoint.y - 1 >= -mazeHalfSize)
 	{
 		Point2D posPoint = Point2D(nodePoint.x, nodePoint.y - 1);
-		std::cout << "NEW FRONTIER ADD: (" << posPoint.x << " , " << posPoint.y << ")" << std::endl;
 		tryAddToFrontier(posPoint);
 	}
 
 	if (nodePoint.y + 1 <= mazeHalfSize)
 	{
 		Point2D posPoint = Point2D(nodePoint.x, nodePoint.y + 1);
-		std::cout << "NEW FRONTIER ADD: (" << posPoint.x << " , " << posPoint.y << ")" << std::endl;
 		tryAddToFrontier(posPoint);
 	}
 
 	if (nodePoint.x - 1 >= -mazeHalfSize)
 	{
 		Point2D posPoint = Point2D(nodePoint.x - 1, nodePoint.y);
-		std::cout << "NEW FRONTIER ADD: (" << posPoint.x << " , " << posPoint.y << ")" << std::endl;
 		tryAddToFrontier(posPoint);
 	}
 
 	if (nodePoint.x + 1 <= mazeHalfSize)
 	{
 		Point2D posPoint = Point2D(nodePoint.x + 1, nodePoint.y);
-		std::cout << "NEW FRONTIER ADD: (" << posPoint.x << " , " << posPoint.y << ")" << std::endl;
 		tryAddToFrontier(posPoint);
 	}
 }
@@ -76,6 +69,7 @@ void addNeighborsToFrontier(std::unordered_set<Point2D, PrimMazeGenerator::Point
 void connectRandomNeighbor(Point2D nodePoint, World* world, int mapHalfSize,
 	const std::unordered_set<Point2D, PrimMazeGenerator::Point2DHashFunction>& processedNodes)
 {
+	// Maps direction to change in position
 	std::unordered_map<Direction, Point2D> dirToPointMod =
 	{
 		{Direction::NORTH, Point2D(0, -1)},
@@ -84,19 +78,16 @@ void connectRandomNeighbor(Point2D nodePoint, World* world, int mapHalfSize,
 		{Direction::WEST, Point2D(-1, 0)}
 	};
 
-	std::cout << "--------------------" << std::endl;
-	std::cout << "OG: (" << nodePoint.x << " , " << nodePoint.y << ")" << std::endl;
-
-	// Returns if connect was successful
+	// Tries to connect neighbor to ogPoint, returns if connect was successful
 	auto tryConnectNeighbor = [&](Point2D ogPoint, Direction dirFromOGToNeighbor) -> bool
 	{
 		// No + override so gotta do something weird to add
 		Point2D modPoint = Point2D(0, 0) - dirToPointMod[dirFromOGToNeighbor];
 		Point2D neighborPoint = ogPoint - modPoint;
 
-		std::cout << "NEIGH: (" << neighborPoint.x << " , " << neighborPoint.y << ")" << std::endl;
+		assert(isPointInMap(neighborPoint, mapHalfSize));
 
-		if (processedNodes.find(neighborPoint) != processedNodes.end() && isPointInMap(neighborPoint, mapHalfSize))
+		if (processedNodes.find(neighborPoint) != processedNodes.end())
 		{
 			switch (dirFromOGToNeighbor)
 			{
@@ -121,10 +112,8 @@ void connectRandomNeighbor(Point2D nodePoint, World* world, int mapHalfSize,
 					break;
 
 				default:
-					throw std::exception();
+					throw std::exception("dirFromOGToNeighbor is invalid");
 			}
-
-
 
 			return true;
 		}
@@ -132,10 +121,11 @@ void connectRandomNeighbor(Point2D nodePoint, World* world, int mapHalfSize,
 		return false;
 	};
 
+	// Holds the remaining options for directions to travel in search of processed neighbor
 	Direction possibleDirections[4] = { Direction::NORTH, Direction::SOUTH, Direction::EAST, Direction::WEST };
 	int possibleDirectionsSize = 4;
 
-	while (possibleDirectionsSize > 0)
+	while (possibleDirectionsSize > 0) // Loop through possibleDirections until we have a successful connection
 	{
 		// Note: Upperbound inclusive
 		int randIndex = Random::Range(0, possibleDirectionsSize - 1);
@@ -147,27 +137,17 @@ void connectRandomNeighbor(Point2D nodePoint, World* world, int mapHalfSize,
 		{
 			return;
 		}
-		else
+		else // Reduce selection range and move invalid direction to back of array so we don't select it again
 		{
-			std::cout << "Selection: " << randDirection << std::endl;
 			possibleDirectionsSize--;
 
 			Direction temp = possibleDirections[randIndex];
 			possibleDirections[randIndex] = possibleDirections[possibleDirectionsSize];
 			possibleDirections[possibleDirectionsSize] = temp;
-
-			std::cout << "PosDirSize: " << possibleDirectionsSize << std::endl;
-
-			for (Direction d : possibleDirections)
-			{
-				std::cout << d;
-			}
-
-			std::cout << std::endl;
 		}
 	}
 
-	throw std::exception();
+	throw std::exception("No valid neighbor, should be impossible");
 }
 
 
@@ -188,8 +168,9 @@ bool PrimMazeGenerator::Step(World* world)
 { 
 	int mazeHalfSize = (world->GetSize() - 1) / 2;
 
-	if (processedNodes.empty())
+	if (processedNodes.empty()) // Maze is just starting out and needs initialization
 	{
+		// Select random starting point
 		// Note: Upperbound is inclusive
 		Point2D randomPoint = Point2D(Random::Range(-mazeHalfSize, mazeHalfSize), Random::Range(-mazeHalfSize, mazeHalfSize));
 
@@ -201,7 +182,7 @@ bool PrimMazeGenerator::Step(World* world)
 		return true;
 	}
 
-	if (frontier.empty()) return false;
+	if (frontier.empty()) return false; // If no nodes in frontier, we're done!
 
 	// https://www.reddit.com/r/cpp_questions/comments/r6fqsb/question_using_rand_to_pick_a_random_in_an/
 	// Get random frontier point
@@ -211,6 +192,7 @@ bool PrimMazeGenerator::Step(World* world)
 	processedNodes.insert(frontierPoint);
 	frontier.erase(frontierPoint);
 
+	// Process node
 	connectRandomNeighbor(frontierPoint, world, mazeHalfSize, processedNodes);
 	addNeighborsToFrontier(frontier, processedNodes, frontierPoint, mazeHalfSize);
 
