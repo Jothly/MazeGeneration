@@ -25,8 +25,8 @@ bool isPointInMap(Point2D point, int mapHalfSize)
 }
 
 
-void addNeighborsToFrontier(std::unordered_set<Point2D, PrimMazeGenerator::Point2DHashFunction>& frontier, 
-	const std::unordered_set<Point2D, PrimMazeGenerator::Point2DHashFunction>& processedNodes, 
+void addNeighborsToFrontier(std::unordered_set<Point2D, Point2DHashFunction>& frontier, 
+	const std::unordered_set<Point2D, Point2DHashFunction>& processedNodes, 
 	Point2D nodePoint, int mazeHalfSize)
 {
 	auto tryAddToFrontier = [&](Point2D p) // Adds p to frontier if it hasn't already been processed
@@ -67,7 +67,7 @@ void addNeighborsToFrontier(std::unordered_set<Point2D, PrimMazeGenerator::Point
 
 
 void connectRandomNeighbor(Point2D nodePoint, World* world, int mapHalfSize,
-	const std::unordered_set<Point2D, PrimMazeGenerator::Point2DHashFunction>& processedNodes)
+	const std::unordered_set<Point2D, Point2DHashFunction>& processedNodes)
 {
 	// Maps direction to change in position
 	std::unordered_map<Direction, Point2D> dirToPointMod =
@@ -215,7 +215,7 @@ void PrimMazeGenerator::displayColors(World* world)
 {
 	for (Point2D p : frontier)
 	{
-		world->SetNodeColor(p, Color32(255, 50, 0));
+		world->SetNodeColor(p, Color32(50, 100, 255));
 	}
 
 	for (Point2D p : processedNodes)

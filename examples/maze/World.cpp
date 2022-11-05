@@ -1,9 +1,11 @@
 #include "World.h"
 #include "generators/RecursiveBacktracker.h"
 #include "generators/PrimMazeGenerator.h"
+#include "generators/HuntAndKillMazeGenerator.h"
 #include <chrono>
 
 World::World(Engine* pEngine, int size=11): GameObject(pEngine), sideSize(size) {
+	generators.push_back(new HuntAndKillMazeGenerator());
 	generators.push_back(new PrimMazeGenerator());
 	//generators.push_back(new MazeGenerator());
 	generators.push_back(new RecursiveBacktracker());

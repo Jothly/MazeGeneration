@@ -15,7 +15,7 @@ file(GLOB MAZE_SRC
 
 install (FILES ${MAZE_INC} DESTINATION include/maze)
 
-add_executable(maze ${MAZE_SRC} ${MAZE_INC} "generators/PrimMazeGenerator.h" "generators/PrimMazeGenerator.cpp")
+add_executable(maze ${MAZE_SRC} ${MAZE_INC} "generators/PrimMazeGenerator.h" "generators/PrimMazeGenerator.cpp" "generators/HuntAndKillMazeGenerator.h" "generators/HuntAndKillMazeGenerator.cpp" "Point2DHashFunction.h")
 
 target_include_directories(maze PUBLIC ${SDL2_INCLUDE_DIR} ${CORE_INC_DIR})
 IF(EMSCRIPTEN)
