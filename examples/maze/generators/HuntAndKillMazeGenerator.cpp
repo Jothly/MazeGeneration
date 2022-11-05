@@ -24,36 +24,44 @@ bool HuntAndKillMazeGenerator::Step(World* world)
 {
 	int mazeHalfSize = (world->GetSize() - 1) / 2;
 
+	if (completedRowNum - mazeHalfSize > mazeHalfSize)
+	{
+		displayColors(world, mazeHalfSize, false, false);
+		return false;
+	}
+
 	if (visitedNodes.empty())
 	{
 		// Note: Upperbound is inclusivve
 		currentNode = Point2D(Random::Range(-mazeHalfSize, mazeHalfSize), Random::Range(-mazeHalfSize, mazeHalfSize));
 		visitedNodes.insert(currentNode);
-		displayColors(world, mazeHalfSize, false, true);
+		displayColors(world, mazeHalfSize, true, false);
 		return true;
 	}
 
 	if (hunting) // Need to hunt for another node
 	{
-		std::pair<Point2D, bool> huntResult = huntThroughNextRow(mazeHalfSize);
+		std::pair<Point2D, bool> huntResult = huntThroughNextRow(mazeHalfSize, world);
 
 		if (huntResult.second == true)
 		{
 			currentNode = huntResult.first;
-			hunting = false;;
+			hunting = false;
 			displayColors(world, mazeHalfSize, true, true);
+			return true;
 		}
 		else
 		{
 			if (completedRowNum - mazeHalfSize <= mazeHalfSize)
 			{
-				displayColors(world, mazeHalfSize, true, false);
+				displayColors(world, mazeHalfSize, false, true, true);
+				return true;
 			}
 			else // Finished
 			{
 				hunting = false;
-				displayColors(world, mazeHalfSize, false, false);
-				return false;
+				displayColors(world, mazeHalfSize, false, true, true);
+				return true;
 			}
 		}
 	}
@@ -61,17 +69,20 @@ bool HuntAndKillMazeGenerator::Step(World* world)
 	{
 		bool successful = advanceNode(world, mazeHalfSize);
 
+		completedRowNum = 0;
+
 		if (successful == false)
 		{
 			hunting = true;
+			displayColors(world, mazeHalfSize, false, false);
 		}
-
-		displayColors(world, mazeHalfSize, false, true);
+		else
+		{
+			displayColors(world, mazeHalfSize, true, false);
+		}
 
 		return true;
 	}
-
-	return false;
 }
 
 
@@ -85,7 +96,7 @@ void HuntAndKillMazeGenerator::Clear(World* world)
 
 
 // Returns found point and a bool telling if 
-std::pair<Point2D, bool> HuntAndKillMazeGenerator::huntThroughNextRow(int mazeHalfSize)
+std::pair<Point2D, bool> HuntAndKillMazeGenerator::huntThroughNextRow(int mazeHalfSize, World* world)
 {
 	// Wrap below code in this if statement if we don't want to be able to step through
 	/*while (completedRowNum - mazeHalfSize <= mazeHalfSize)
@@ -94,12 +105,15 @@ std::pair<Point2D, bool> HuntAndKillMazeGenerator::huntThroughNextRow(int mazeHa
 	for (int x = -mazeHalfSize; x <= mazeHalfSize; x++)
 	{
 		Point2D posPoint = Point2D(x, completedRowNum - mazeHalfSize);
+		if (visitedNodes.find(posPoint) != visitedNodes.end()) continue;
 
 		for (int i = 0; i < 4; i++)
 		{
 			Point2D neighbor = posPoint - pointMods[i];
 			if (visitedNodes.find(neighbor) != visitedNodes.end())
 			{
+				visitedNodes.insert(posPoint);
+				connectNodes(posPoint, neighbor, world);
 				return std::pair<Point2D, bool>(posPoint, true);;
 			}
 		}
@@ -107,14 +121,7 @@ std::pair<Point2D, bool> HuntAndKillMazeGenerator::huntThroughNextRow(int mazeHa
 
 	completedRowNum++;
 
-	if (completedRowNum - mazeHalfSize <= mazeHalfSize)
-	{
-		return std::pair<Point2D, bool>(Point2D(), true);
-	}
-	else // Finished search, maze is complete
-	{
-		return std::pair<Point2D, bool>(Point2D(), false);
-	}
+	return std::pair<Point2D, bool>(Point2D(), false);
 }
 
 
@@ -127,14 +134,12 @@ bool HuntAndKillMazeGenerator::advanceNode(World* world, int mazeHalfSize)
 		int currentPointModIndex = Random::Range(0, pointModsSize - 1);
 		Point2D posNextNode = currentNode - pointMods[currentPointModIndex];
 
-		std::cout << "POS NEXT NODE: " << posNextNode.x << " , " << posNextNode.y << std::endl;
-
 		if (isPointInMap(posNextNode, mazeHalfSize) && visitedNodes.find(posNextNode) == visitedNodes.end())
 		{
 			connectNodes(currentNode, posNextNode, world);
 			currentNode = posNextNode;
 			visitedNodes.insert(currentNode);
-			std::cout << "SUCCESS!!!!" << std::endl;
+
 			return true;
 		}
 
@@ -182,18 +187,26 @@ bool HuntAndKillMazeGenerator::connectNodes(Point2D p1, Point2D p2, World* world
 }
 
 
-void HuntAndKillMazeGenerator::displayColors(World* world, int mazeHalfSize, bool huntingCompletedRow, bool shouldDrawCurrentPoint)
+void HuntAndKillMazeGenerator::displayColors(World* world, int mazeHalfSize, bool shouldDrawCurrentPoint, bool shouldDrawHuntingLine, bool huntingCompletedRow)
 {
+	for (int y = -mazeHalfSize; y <= mazeHalfSize; y++)
+	{
+		for (int x = -mazeHalfSize; x <= mazeHalfSize; x++)
+		{
+			world->SetNodeColor(Point2D(x, y), Color::Gray.Dark());
+		}
+	}
+
 	for (Point2D p : visitedNodes)
 	{
 		world->SetNodeColor(p, Color32(0, 0, 0));
 	}
 
-	if (hunting)
+	if (shouldDrawHuntingLine)
 	{
+		int y = completedRowNum - huntingCompletedRow - mazeHalfSize;
 		for (int x = -mazeHalfSize; x <= mazeHalfSize; x++)
 		{
-			int y = completedRowNum - huntingCompletedRow;
 			world->SetNodeColor(Point2D(x, y), Color32(255, 255, 0));
 		}
 	}

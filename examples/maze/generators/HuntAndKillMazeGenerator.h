@@ -28,14 +28,14 @@ class HuntAndKillMazeGenerator : public MazeGeneratorBase
 	Point2D currentNode = Point2D();
 	std::unordered_set<Point2D, Point2DHashFunction> visitedNodes;
 
-	std::pair<Point2D, bool> huntThroughNextRow(int mazeHalfSize);
+	std::pair<Point2D, bool> huntThroughNextRow(int mazeHalfSize, World* world);
 	bool advanceNode(World* world, int mazeHalfSide);
 
 	bool isPointInMap(Point2D point, int mazeHalfSize);
 
 	bool connectNodes(Point2D p1, Point2D p2, World* world);
 
-	void displayColors(World* world, int mazeHalfSize, bool huntingCompletedRow, bool shouldDrawCurrentPoint);
+	void displayColors(World* world, int mazeHalfSize, bool shouldDrawCurrentPoint, bool shouldDrawHuntingLine, bool huntingCompletedRow = false);
 
 	public:
 	HuntAndKillMazeGenerator();
