@@ -6,6 +6,10 @@
 #include <iostream>
 
 
+AltitudeFiltering::AltitudeFiltering(ScenarioGeneratorBase* _generator) : generator(_generator)
+{}
+
+
 float lerp(float a, float b, float t)
 {
 	return a + (b - a) * t;
@@ -33,38 +37,16 @@ std::vector<Color32> AltitudeFiltering::Generate(int sideSize, float displacemen
 {
 	using namespace std;
 
-	const Color32 WATER_COLOR = Color32(0, 21, 255);
-	const Color32 SAND_COLOR = Color32(222, 204, 69);
-	const Color32 GRASS_COLOR = Color32(28, 199, 6);
-	const Color32 ROCK_COLOR = Color32(117, 56, 21);
-	const Color32 SNOW_COLOR = Color32(255, 255, 255);
-
-	// Note: assumes pairs are ordered by float value in ascending order,
-	// and assumes first element is 0 and last element is 1
-	std::vector<pair<float, Color32>> colorGradients = // float between 0 and 1 (0 and 255)
-	{
-		{0, WATER_COLOR}, 
-		{.15, WATER_COLOR},
-		{.2, SAND_COLOR},
-		{.22, SAND_COLOR}, 
-		{.27, GRASS_COLOR},
-		{.35, GRASS_COLOR},
-		{.4, ROCK_COLOR},
-		{.425, ROCK_COLOR},
-		{.5, SNOW_COLOR}, 
-		{1, SNOW_COLOR}
-	};
-
 	RandomScenarioGenerator randScenarioGenerator;
 	std::vector<Color32> pixelColors = randScenarioGenerator.Generate(sideSize, displacement);
 
-	float max = 0;
-	for (Color32& col : pixelColors)
-	{
-		if (col.r / 255.0 > max) max = col.r / 255.0;
-	}
+	return Generate(pixelColors);
+}
 
-	std::cout << max << std::endl;
+
+std::vector<Color32> AltitudeFiltering::Generate(std::vector<Color32>& pixelColors)
+{
+	using namespace std;
 
 	for (Color32& col : pixelColors)
 	{

@@ -2,13 +2,15 @@
 #include "Point2D.h"
 #include "generators/RandomGenerator.h"
 #include "generators/AltitudeFiltering.h"
+#include "generators/IslandGenerator.h"
 #include <chrono>
 #include <iostream>
 Manager::Manager(Engine* engine, int size)
     : GameObject(engine) {
   // todo: add your generator here
-	generators.push_back(new AltitudeFiltering());
+	generators.push_back(new IslandGenerator());
 	generators.push_back(new RandomScenarioGenerator());
+	generators.push_back(new AltitudeFiltering(generators[generators.size() - 1]));
 }
 
 void Manager::SetPixels(std::vector<Color32> &input) {
